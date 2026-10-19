@@ -7,24 +7,20 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 @Controller
-@MessageMapping("/chat.sendmessage")
-@SendTo("/topic/public")
-
 public class WebSocketController {
-    public ChatMessage Sendmessage(
-        @Payload ChatMessage chatmessage
-    ){
-        return chatmessage;
 
+    @MessageMapping("/chat.sendmessage")
+    @SendTo("/topic/public")
+    public ChatMessage sendMessage(@Payload ChatMessage chatMessage) {
+        return chatMessage;
     }
 
     @MessageMapping("/chat.adduser")
     @SendTo("/topic/public")
-    public ChatMessage Adduser(
-        @Payload ChatMessage chatmessage,
-        SimpMessageHeaderAccessor headeracc
-    ){
-        headeracc.getSessionAttributes().put("username", chatmessage.getSender());
-        return chatmessage;
+    public ChatMessage addUser(@Payload ChatMessage chatMessage,
+                               SimpMessageHeaderAccessor headerAccessor) {
+        // Add username in web socket session
+        headerAccessor.getSessionAttributes().put("username", chatMessage.getSender());
+        return chatMessage;
     }
 }

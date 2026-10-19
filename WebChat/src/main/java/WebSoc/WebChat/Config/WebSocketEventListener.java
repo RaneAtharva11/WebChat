@@ -8,7 +8,6 @@ import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 
 @Component
@@ -16,20 +15,24 @@ import org.springframework.web.socket.messaging.SessionDisconnectEvent;
 @RequiredArgsConstructor
 public class WebSocketEventListener {
 
-    SimpMessageSendingOperations messagingTemplate;
+    private final SimpMessageSendingOperations messagingTemplate;   // ← must be final
+
     @EventListener
-    public void HandleWebSocDisconnectUser(
-          SessionDisconnectEvent event
-    ){
-       StompHeaderAccessor accessor = StompHeaderAccessor.wrap(event.getMessage());
-       String Username = accessor.getSessionAttributes().get("username").toString();
-       if(Username != null){
-           log.info("User disconnected:{} ",Username);
-           var chatmessage= ChatMessage.builder()
-                            .type(MessageType.LEAVE)
-                   .sender(Username)
-                   .build();
-           messagingTemplate.convertAndSend("/topic/public"+Username,chatmessage);
-       }
+    public void handleWebSocketDisconnectListener(SessionDisconnectEvent event) {
+        StompHeaderAccessor headerAccessor = StompHeaderAccessor.wrap(event.getMessage());
+
+        String username = (String) headerAccessor.getSessionAttributes().get("username");
+
+        if (username != null) {
+            log.info("User disconnected: {}", username);
+
+            ChatMessage chatMessage = ChatMessage.builder()
+                    .type(MessageType.LEAVE)
+                    .sender(username)
+                    .build();
+
+            // Important: send to /topic/public  (NOT /topic/public + username)
+            messagingTemplate.convertAndSend("/topic/public", chatMessage);
+        }
     }
 }
